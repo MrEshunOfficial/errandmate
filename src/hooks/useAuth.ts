@@ -1,5 +1,5 @@
 // File: hooks/useAuth.ts
-// Place this in your homepage application (separate service)
+// Updated version with token-based authentication support
 
 import { useState, useEffect, useCallback } from 'react';
 import authClient, { AuthUser } from '@/lib/auth/authClient';
@@ -25,9 +25,9 @@ export const useAuth = (): UseAuthReturn => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const result = await authClient.checkAuthentication();
-      
+
       if (result.authenticated && result.user) {
         setUser(result.user);
       } else {
@@ -65,16 +65,28 @@ export const useAuth = (): UseAuthReturn => {
     return hasAnyRole(['admin', 'super_admin']);
   }, [hasAnyRole]);
 
-  // Initial authentication check
+  // Initialize authentication on component mount
   useEffect(() => {
+    // Check if we have token parameters in URL (OAuth callback)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      authClient.setToken(token);
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('token');
+      url.searchParams.delete('sessionId');
+      window.history.replaceState({}, document.title, url.toString());
+    }
+    // Always check authentication
     checkAuth();
   }, [checkAuth]);
 
-  // Start periodic authentication checking
+  // Start periodic authentication checking when user is authenticated
   useEffect(() => {
     if (user) {
       authClient.startPeriodicCheck(300000); // Check every 5 minutes
-      
+
       return () => {
         authClient.stopPeriodicCheck();
       };

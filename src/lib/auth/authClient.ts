@@ -1,5 +1,5 @@
 // File: lib/auth/authClient.ts
-// Updated version for profile service to work with your auth service structure
+// Updated version using token-based authentication instead of cookies
 
 export interface AuthUser {
   id: string;
@@ -15,6 +15,7 @@ export interface AuthResponse {
   authenticated: boolean;
   user?: AuthUser;
   sessionId?: string;
+  token?: string;
   message?: string;
 }
 
@@ -22,9 +23,41 @@ class AuthClient {
   private authServiceUrl: string;
   private user: AuthUser | null = null;
   private checkInterval: NodeJS.Timeout | null = null;
+  private token: string | null = null;
 
   constructor(authServiceUrl: string) {
     this.authServiceUrl = authServiceUrl;
+    // Load token from localStorage on initialization
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('auth_token');
+    }
+  }
+
+  /**
+   * Set authentication token (call this after successful login)
+   */
+  setToken(token: string): void {
+    this.token = token;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth_token', token);
+    }
+  }
+
+  /**
+   * Get stored token
+   */
+  getToken(): string | null {
+    return this.token;
+  }
+
+  /**
+   * Clear authentication token
+   */
+  clearToken(): void {
+    this.token = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+    }
   }
 
   /**
@@ -32,26 +65,45 @@ class AuthClient {
    */
   async checkAuthentication(): Promise<AuthResponse> {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      // Include token in Authorization header if available
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+
       const response = await fetch(`${this.authServiceUrl}/api/auth/verify-session`, {
         method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        credentials: 'include', // Still include for fallback
+        headers,
       });
 
       const data: AuthResponse = await response.json();
 
       if (response.ok && data.authenticated && data.user) {
         this.user = data.user;
+        
+        // Store token if provided
+        if (data.token) {
+          this.setToken(data.token);
+        }
+
         return {
           authenticated: true,
           user: data.user,
-          sessionId: data.sessionId
+          sessionId: data.sessionId,
+          token: data.token
         };
       }
 
+      // Clear stored data on authentication failure
       this.user = null;
+      if (response.status === 401) {
+        this.clearToken();
+      }
+
       return {
         authenticated: false,
         message: data.message || 'Not authenticated'
@@ -68,6 +120,30 @@ class AuthClient {
   }
 
   /**
+   * Initialize authentication from URL parameters (for OAuth callbacks)
+   */
+  initializeFromUrl(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+      this.setToken(token);
+      
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('token');
+      url.searchParams.delete('sessionId');
+      window.history.replaceState({}, document.title, url.toString());
+      
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Get current user (cached)
    */
   getCurrentUser(): AuthUser | null {
@@ -75,15 +151,18 @@ class AuthClient {
   }
 
   /**
-   * Redirect to login page
+   * Redirect to login page with return URL
    */
   redirectToLogin(callbackUrl?: string): void {
+    const currentUrl = callbackUrl || (typeof window !== 'undefined' ? window.location.href : '');
     const loginUrl = `${this.authServiceUrl}/auth/user/login`;
-    const url = callbackUrl 
-      ? `${loginUrl}?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    const url = currentUrl 
+      ? `${loginUrl}?callbackUrl=${encodeURIComponent(currentUrl)}`
       : loginUrl;
     
-    window.location.href = url;
+    if (typeof window !== 'undefined') {
+      window.location.href = url;
+    }
   }
 
   /**
@@ -91,12 +170,18 @@ class AuthClient {
    */
   async logout(): Promise<void> {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+
       const response = await fetch(`${this.authServiceUrl}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -105,12 +190,15 @@ class AuthClient {
 
     } catch (error) {
       console.error('Logout request failed:', error);
-      // Even if the API call fails, we should still clean up locally
     } finally {
       this.user = null;
+      this.clearToken();
       this.stopPeriodicCheck();
+      
       // Redirect to auth service login page
-      window.location.href = `${this.authServiceUrl}/auth/users/login`;
+      if (typeof window !== 'undefined') {
+        window.location.href = `${this.authServiceUrl}/auth/user/login`;
+      }
     }
   }
 
@@ -126,7 +214,7 @@ class AuthClient {
       const result = await this.checkAuthentication();
       if (!result.authenticated) {
         console.log('Session expired, redirecting to login...');
-        this.redirectToLogin(window.location.pathname);
+        this.redirectToLogin();
       }
     }, intervalMs);
   }
