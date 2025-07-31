@@ -165,7 +165,7 @@ class AuthClient {
 
 // Create singleton instance
 const authClient = new AuthClient(
-  process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || '*'
+  process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'https://access-management-xi.vercel.app'
 );
 
 export default authClient;
