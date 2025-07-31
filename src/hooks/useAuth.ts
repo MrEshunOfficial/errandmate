@@ -32,6 +32,15 @@ export const useAuth = (): UseAuthReturn => {
         setUser(result.user);
       } else {
         setUser(null);
+        
+        // Handle cross-domain authentication requirement
+        if (result.requiresRedirect && typeof window !== 'undefined') {
+          console.log('Cross-domain authentication required, redirecting to login...');
+          // Redirect to login with current URL as callback
+          authClient.redirectToLogin(window.location.href);
+          return; // Don't set error state as we're redirecting
+        }
+        
         setError(result.message || 'Not authenticated');
       }
     } catch (err) {
@@ -68,16 +77,8 @@ export const useAuth = (): UseAuthReturn => {
   // Initialize authentication on component mount
   useEffect(() => {
     // Check if we have token parameters in URL (OAuth callback)
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if (token) {
-      authClient.setToken(token);
-      // Clean up URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('token');
-      url.searchParams.delete('sessionId');
-      window.history.replaceState({}, document.title, url.toString());
-    }
+    // const hasTokenInUrl = authClient.initializeFromUrl();
+    
     // Always check authentication
     checkAuth();
   }, [checkAuth]);

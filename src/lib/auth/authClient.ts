@@ -17,6 +17,8 @@ export interface AuthResponse {
   sessionId?: string;
   token?: string;
   message?: string;
+  requiresRedirect?: boolean;
+  loginUrl?: string;
 }
 
 class AuthClient {
@@ -98,6 +100,20 @@ class AuthClient {
         };
       }
 
+      // Handle cross-domain authentication requirement
+      if (response.status === 401 && data.requiresRedirect) {
+        // This is a cross-domain request that needs authentication
+        this.user = null;
+        this.clearToken();
+        
+        return {
+          authenticated: false,
+          message: data.message || 'Authentication required',
+          requiresRedirect: true,
+          loginUrl: data.loginUrl
+        };
+      }
+
       // Clear stored data on authentication failure
       this.user = null;
       if (response.status === 401) {
@@ -127,6 +143,7 @@ class AuthClient {
 
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
+    // const sessionId = urlParams.get('sessionId');
 
     if (token) {
       this.setToken(token);
