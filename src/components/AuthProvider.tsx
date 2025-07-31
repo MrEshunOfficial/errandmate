@@ -1,5 +1,4 @@
 // File: components/providers/AuthProvider.tsx
-// Place this in your homepage application (separate service)
 
 "use client";
 
@@ -58,9 +57,11 @@ export const withAuth = <P extends object>(
 
       // Redirect to login
       if (typeof window !== "undefined") {
-        const authServiceUrl = "http://localhost:3000";
+        const authServiceUrl =
+          process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
+          "https://access-management-xi.vercel.app";
         const callbackUrl = encodeURIComponent(window.location.pathname);
-        window.location.href = `${authServiceUrl}/user/login?callbackUrl=${callbackUrl}`;
+        window.location.href = `${authServiceUrl}/auth/users/login?callbackUrl=${callbackUrl}`;
       }
 
       return (

@@ -1,5 +1,5 @@
 // File: hooks/useAuth.ts
-// Updated version with token-based authentication support
+// Place this in your homepage application (separate service)
 
 import { useState, useEffect, useCallback } from 'react';
 import authClient, { AuthUser } from '@/lib/auth/authClient';
@@ -25,22 +25,13 @@ export const useAuth = (): UseAuthReturn => {
     try {
       setIsLoading(true);
       setError(null);
-
+      
       const result = await authClient.checkAuthentication();
-
+      
       if (result.authenticated && result.user) {
         setUser(result.user);
       } else {
         setUser(null);
-        
-        // Handle cross-domain authentication requirement
-        if (result.requiresRedirect && typeof window !== 'undefined') {
-          console.log('Cross-domain authentication required, redirecting to login...');
-          // Redirect to login with current URL as callback
-          authClient.redirectToLogin(window.location.href);
-          return; // Don't set error state as we're redirecting
-        }
-        
         setError(result.message || 'Not authenticated');
       }
     } catch (err) {
@@ -74,20 +65,16 @@ export const useAuth = (): UseAuthReturn => {
     return hasAnyRole(['admin', 'super_admin']);
   }, [hasAnyRole]);
 
-  // Initialize authentication on component mount
+  // Initial authentication check
   useEffect(() => {
-    // Check if we have token parameters in URL (OAuth callback)
-    // const hasTokenInUrl = authClient.initializeFromUrl();
-    
-    // Always check authentication
     checkAuth();
   }, [checkAuth]);
 
-  // Start periodic authentication checking when user is authenticated
+  // Start periodic authentication checking
   useEffect(() => {
     if (user) {
       authClient.startPeriodicCheck(300000); // Check every 5 minutes
-
+      
       return () => {
         authClient.stopPeriodicCheck();
       };
