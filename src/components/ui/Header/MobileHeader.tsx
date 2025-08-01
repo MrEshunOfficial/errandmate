@@ -164,7 +164,7 @@ export default function MobileMenu({
               {!userSession && (
                 <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50 space-y-3">
                   <Link
-                    href={`${process.env.USER_SERVICE_URL}/auth/users/login`}
+                    href={`${process.env.AUTH_ACCESS_URL}/auth/users/login`}
                     onClick={onClose}
                     className="block w-full px-6 py-3 text-center font-medium text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-800/70 transition-all duration-300 border border-gray-200/30 dark:border-gray-700/30"
                   >
@@ -172,7 +172,7 @@ export default function MobileMenu({
                   </Link>
 
                   <Link
-                    href={`${process.env.USER_SERVICE_URL}/auth/users/register`}
+                    href={`${process.env.AUTH_ACCESS_URL}/auth/users/register`}
                     onClick={onClose}
                     className="block w-full px-6 py-3 text-center font-semibold text-white rounded-xl bg-gradient-to-r from-red-500 via-red-400 to-blue-600 hover:from-red-600 hover:via-red-500 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                   >
