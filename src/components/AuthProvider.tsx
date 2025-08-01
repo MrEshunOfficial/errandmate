@@ -57,7 +57,7 @@ export const withAuth = <P extends object>(
 
       // Redirect to login
       if (typeof window !== "undefined") {
-        const authServiceUrl = process.env.AUTH_ACCESS_URL || "*";
+        const authServiceUrl = process.env.NEXT_PUBLIC_AUTH_ACCESS_URL || "*";
         const callbackUrl = encodeURIComponent(window.location.pathname);
         window.location.href = `${authServiceUrl}/auth/users/login?callbackUrl=${callbackUrl}`;
       }

@@ -165,7 +165,7 @@ class AuthClient {
 
 // Create singleton instance
 const authClient = new AuthClient(
-  process.env.AUTH_ACCESS_URL || '*'
+  process.env.NEXT_PUBLIC_AUTH_ACCESS_URL || '*'
 );
 
 export default authClient;
