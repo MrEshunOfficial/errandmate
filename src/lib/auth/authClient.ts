@@ -1,5 +1,5 @@
 // File: lib/auth/authClient.ts
-// Updated version with CORS fix for production cross-domain requests
+// Updated version for profile service to work with your auth service structure
 
 export interface AuthUser {
   id: string;
@@ -37,12 +37,7 @@ class AuthClient {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          // Add these headers for CORS
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
         },
-        // Add mode for cross-origin requests
-        mode: 'cors',
       });
 
       const data: AuthResponse = await response.json();
@@ -101,9 +96,7 @@ class AuthClient {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
-        mode: 'cors',
       });
 
       if (!response.ok) {
@@ -172,7 +165,7 @@ class AuthClient {
 
 // Create singleton instance
 const authClient = new AuthClient(
-  process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'https://access-management-xi.vercel.app'
+  process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || '*'
 );
 
 export default authClient;

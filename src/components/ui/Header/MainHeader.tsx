@@ -360,23 +360,19 @@ function UserMenu() {
           className="relative flex items-center gap-2 sm:gap-3 px-2 sm:px-3 lg:px-4 py-2 h-10 sm:h-11 lg:h-12 rounded-full bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all duration-300 border border-white/20 dark:border-gray-700/20 max-w-[200px]"
         >
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden relative bg-gradient-to-br from-red-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0">
-            {user?.image ? (
+            {user?.image && (
               <Image
                 src={user.image}
-                alt={`${user?.name || "User"}'s avatar`}
+                alt={`${user?.name}`}
                 width={32}
                 height={32}
                 className="rounded-full object-cover w-full h-full"
                 sizes="32px"
               />
-            ) : (
-              <span className="text-white text-xs sm:text-sm font-semibold">
-                {(user?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
-              </span>
             )}
           </div>
           <span className="hidden md:inline text-sm lg:text-base font-medium truncate">
-            {user?.name || "Account"}
+            {user?.name}
           </span>
           <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 flex-shrink-0" />
         </Button>
@@ -388,7 +384,7 @@ function UserMenu() {
       >
         <div className="px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50">
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {user?.name || "User"}
+            {user?.name}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
             {user?.email}

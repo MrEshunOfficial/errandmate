@@ -75,28 +75,20 @@ export default function MobileMenu({
             <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-red-500/5 via-transparent to-blue-600/5">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full overflow-hidden relative bg-gradient-to-br from-red-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                  {userSession?.image ? (
+                  {userSession?.image && (
                     <Image
                       src={userSession.image}
-                      alt={`${userSession?.name || "User"}'s avatar`}
+                      alt={`${userSession?.name}`}
                       width={48}
                       height={48}
                       className="rounded-full object-cover"
                       sizes="48px"
                     />
-                  ) : (
-                    <span className="text-white text-lg font-semibold">
-                      {(
-                        userSession?.name?.[0] ||
-                        userSession?.email?.[0] ||
-                        "U"
-                      ).toUpperCase()}
-                    </span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
-                    {userSession?.name || "User"}
+                    {userSession?.name}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     {userSession?.email}
