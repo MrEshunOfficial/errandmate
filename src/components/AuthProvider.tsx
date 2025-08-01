@@ -57,7 +57,9 @@ export const withAuth = <P extends object>(
 
       // Redirect to login
       if (typeof window !== "undefined") {
-        const authServiceUrl = process.env.NEXT_PUBLIC_AUTH_ACCESS_URL || "*";
+        const authServiceUrl =
+          process.env.NEXT_PUBLIC_AUTH_ACCESS_URL ||
+          "https://access-management-xi.vercel.app";
         const callbackUrl = encodeURIComponent(window.location.pathname);
         window.location.href = `${authServiceUrl}/auth/users/login?callbackUrl=${callbackUrl}`;
       }
