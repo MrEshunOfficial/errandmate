@@ -212,7 +212,7 @@ export default function Header() {
                 {!user && !isLoading ? (
                   <div className="hidden sm:flex items-center space-x-2 lg:space-x-3">
                     <Link
-                      href={`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/auth/users/login`}
+                      href={`${process.env.USER_SERVICE_URL}/auth/users/login`}
                       className="relative px-3 sm:px-4 lg:px-6 py-2 lg:py-2.5 text-sm lg:text-base font-medium text-gray-700 dark:text-gray-300 transition-all duration-300 group whitespace-nowrap"
                     >
                       <div className="absolute inset-0 bg-white/20 dark:bg-gray-800/20 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -221,7 +221,7 @@ export default function Header() {
                       </span>
                     </Link>
                     <Link
-                      href={`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/auth/users/register`}
+                      href={`${process.env.USER_SERVICE_URL}/auth/users/register`}
                       className="relative px-4 sm:px-6 lg:px-8 py-2 lg:py-3 text-sm lg:text-base font-semibold text-white rounded-full overflow-hidden group transition-all duration-300 hover:scale-105 hover:shadow-xl whitespace-nowrap"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-red-400 to-blue-600 transition-all duration-300" />
