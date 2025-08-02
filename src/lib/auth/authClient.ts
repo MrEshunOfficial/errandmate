@@ -14,7 +14,6 @@ export interface AuthUser {
 export interface AuthResponse {
   authenticated: boolean;
   user?: AuthUser;
-  sessionId?: string;
   message?: string;
   token?: string;
   authMethod?: string;
@@ -39,20 +38,12 @@ class AuthClient {
    */
   async checkAuthentication(): Promise<AuthResponse> {
     try {
-      // Prepare headers
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      // Add token to headers if available
-      if (this.token) {
-        headers['Authorization'] = `Bearer ${this.token}`;
-      }
-
       const response = await fetch(`${this.authServiceUrl}/api/auth/verify-session`, {
         method: 'GET',
-        credentials: 'include', // Still try cookies first
-        headers,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       const data: AuthResponse = await response.json();
@@ -69,25 +60,17 @@ class AuthClient {
         return {
           authenticated: true,
           user: data.user,
-          sessionId: data.sessionId,
-          authMethod: data.authMethod
+          sessionId: data.sessionId
         };
-      }
-
-      // If authentication failed and we had a token, clear it
-      if (this.token && typeof window !== 'undefined') {
-        this.token = null;
-        localStorage.removeItem('auth-token');
       }
 
       this.user = null;
       return {
         authenticated: false,
-        message: data.message || 'Not authenticated'
+        message: data.message || "Not authenticated",
       };
-
     } catch (error) {
-      console.error('Authentication check failed:', error);
+      console.error("Authentication check failed:", error);
       this.user = null;
       
       // Clear token on network errors
@@ -98,7 +81,7 @@ class AuthClient {
       
       return {
         authenticated: false,
-        message: 'Network error during authentication check'
+        message: "Network error during authentication check",
       };
     }
   }
@@ -132,10 +115,10 @@ class AuthClient {
    */
   redirectToLogin(callbackUrl?: string): void {
     const loginUrl = `${this.authServiceUrl}/auth/users/login`;
-    const url = callbackUrl 
+    const url = callbackUrl
       ? `${loginUrl}?callbackUrl=${encodeURIComponent(callbackUrl)}`
       : loginUrl;
-    
+
     window.location.href = url;
   }
 
@@ -164,15 +147,17 @@ class AuthClient {
       const response = await fetch(`${this.authServiceUrl}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
-        throw new Error('Logout request failed');
+        throw new Error("Logout request failed");
       }
-
     } catch (error) {
       console.error('Logout request failed:', error);
+      // Even if the API call fails, we should still clean up locally
     } finally {
       // Always clean up locally
       this.user = null;
@@ -199,7 +184,7 @@ class AuthClient {
     this.checkInterval = setInterval(async () => {
       const result = await this.checkAuthentication();
       if (!result.authenticated) {
-        console.log('Session expired, redirecting to login...');
+        console.log("Session expired, redirecting to login...");
         this.redirectToLogin(window.location.pathname);
       }
     }, intervalMs);
@@ -233,7 +218,7 @@ class AuthClient {
    * Check if user is admin or super_admin
    */
   isAdmin(): boolean {
-    return this.hasAnyRole(['admin', 'super_admin']);
+    return this.hasAnyRole(["admin", "super_admin"]);
   }
 
   /**
@@ -259,7 +244,8 @@ class AuthClient {
 
 // Create singleton instance
 const authClient = new AuthClient(
-  process.env.NEXT_PUBLIC_AUTH_ACCESS_URL || 'https://access-management-xi.vercel.app'
+  process.env.NEXT_PUBLIC_AUTH_ACCESS_URL ||
+    "https://access-management-xi.vercel.app"
 );
 
 export default authClient;
