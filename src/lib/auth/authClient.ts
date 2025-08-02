@@ -1,5 +1,5 @@
 // File: lib/auth/authClient.ts
-// Updated version for profile service to work with your auth service structure
+// Updated to support token-based authentication
 
 export interface AuthUser {
   id: string;
@@ -16,39 +16,68 @@ export interface AuthResponse {
   user?: AuthUser;
   sessionId?: string;
   message?: string;
+  token?: string;
+  authMethod?: string;
 }
 
 class AuthClient {
   private authServiceUrl: string;
   private user: AuthUser | null = null;
+  private token: string | null = null;
   private checkInterval: NodeJS.Timeout | null = null;
 
   constructor(authServiceUrl: string) {
     this.authServiceUrl = authServiceUrl;
+    // Try to load existing token from localStorage
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('auth-token');
+    }
   }
 
   /**
-   * Check if user is authenticated by calling the auth service
+   * Check if user is authenticated - tries both cookie and token methods
    */
   async checkAuthentication(): Promise<AuthResponse> {
     try {
+      // Prepare headers
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add token to headers if available
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+
       const response = await fetch(`${this.authServiceUrl}/api/auth/verify-session`, {
         method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        credentials: 'include', // Still try cookies first
+        headers,
       });
 
       const data: AuthResponse = await response.json();
 
       if (response.ok && data.authenticated && data.user) {
         this.user = data.user;
+        
+        // Store the token for future requests
+        if (data.token && typeof window !== 'undefined') {
+          this.token = data.token;
+          localStorage.setItem('auth-token', data.token);
+        }
+        
         return {
           authenticated: true,
           user: data.user,
-          sessionId: data.sessionId
+          sessionId: data.sessionId,
+          authMethod: data.authMethod
         };
+      }
+
+      // If authentication failed and we had a token, clear it
+      if (this.token && typeof window !== 'undefined') {
+        this.token = null;
+        localStorage.removeItem('auth-token');
       }
 
       this.user = null;
@@ -60,6 +89,13 @@ class AuthClient {
     } catch (error) {
       console.error('Authentication check failed:', error);
       this.user = null;
+      
+      // Clear token on network errors
+      if (this.token && typeof window !== 'undefined') {
+        this.token = null;
+        localStorage.removeItem('auth-token');
+      }
+      
       return {
         authenticated: false,
         message: 'Network error during authentication check'
@@ -75,6 +111,23 @@ class AuthClient {
   }
 
   /**
+   * Get current auth token
+   */
+  getToken(): string | null {
+    return this.token;
+  }
+
+  /**
+   * Manually set token (useful after login redirect)
+   */
+  setToken(token: string): void {
+    this.token = token;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth-token', token);
+    }
+  }
+
+  /**
    * Redirect to login page
    */
   redirectToLogin(callbackUrl?: string): void {
@@ -87,16 +140,31 @@ class AuthClient {
   }
 
   /**
+   * Login with redirect - goes to auth service for login
+   */
+  async loginWithRedirect(callbackUrl?: string): Promise<void> {
+    // Store the current URL as callback if none provided
+    const callback = callbackUrl || window.location.href;
+    this.redirectToLogin(callback);
+  }
+
+  /**
    * Logout by calling the auth service API endpoint
    */
   async logout(): Promise<void> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+
       const response = await fetch(`${this.authServiceUrl}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -105,10 +173,16 @@ class AuthClient {
 
     } catch (error) {
       console.error('Logout request failed:', error);
-      // Even if the API call fails, we should still clean up locally
     } finally {
+      // Always clean up locally
       this.user = null;
+      this.token = null;
       this.stopPeriodicCheck();
+      
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth-token');
+      }
+      
       // Redirect to auth service login page
       window.location.href = `${this.authServiceUrl}/auth/users/login`;
     }
@@ -160,6 +234,26 @@ class AuthClient {
    */
   isAdmin(): boolean {
     return this.hasAnyRole(['admin', 'super_admin']);
+  }
+
+  /**
+   * Make authenticated API request
+   */
+  async authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    return fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers,
+    });
   }
 }
 
